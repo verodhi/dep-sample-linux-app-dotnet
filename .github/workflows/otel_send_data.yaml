@@ -1,0 +1,60 @@
+name: _otel_send_data
+
+# Trigger manually to deploty
+on:
+  workflow_run:
+    workflows: ["*"]
+    types:
+      - completed
+  workflow_dispatch:
+
+#Special permissions required for OIDC authentication
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+  statuses: read
+
+# Set environment variables with anything needed by the pipeline
+env:
+
+  # Setup terraform version and code base directory
+  OTEL_REPOSITORY: 'inception-health/otel-export-trace-action.git'
+  OTEL_REPOSITORY_VERSION: 'v1.8.0'
+  OTEL_TRACE_ENDPOINT: 'https://test4telemetry.cchaxcess.com/v1/traces'
+  OTEL_AUTH_HEADER: 'Authorization: Basic dGVzdDRvdGVsdXNlcjp0ZXN0NDB0M2xuJDNy'
+  WORKFLOW_ID: ${{ github.event.workflow_run.id }}
+
+  # Allow command execution required to setup ssh private key.
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+jobs:
+  send_traces: # Get environment directories
+    permissions: write-all
+    runs-on: ubuntu-latest
+      
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v3
+  
+      # Pull the required task to create OTEL traces.
+      # - name: Checkout to OTEL repo
+      #   id: otel-checkout
+      #   uses: actions/checkout@v3
+      #   with:
+      #     repository: ${{ env.OTEL_REPOSITORY }}
+      #     ref: ${{ env.OTEL_REPOSITORY_VERSION }}
+      #     path: ${{ github.workspace }}/.github/actions
+      
+      # Run OTEL action to send traces to Datadog
+      - name: Run action
+        uses: inception-health/otel-export-trace-action@latest
+        if: always()
+        with:
+          otlpEndpoint: ${{ env.OTEL_TRACE_ENDPOINT }}
+          otlpHeaders: ${{ env.OTEL_AUTH_HEADER }}
+          githubToken: ${{ env.GITHUB_TOKEN }}
+          runId: ${{ env.WORKFLOW_ID }}
