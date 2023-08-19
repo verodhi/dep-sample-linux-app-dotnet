@@ -58,3 +58,4 @@ jobs:
           otlpHeaders: ${{ env.OTEL_AUTH_HEADER }}
           githubToken: ${{ env.GITHUB_TOKEN }}
           runId: ${{ env.WORKFLOW_ID }}
+          otelServiceName: 'dep_github_personal'
